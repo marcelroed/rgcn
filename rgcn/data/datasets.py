@@ -36,6 +36,7 @@ def knowledge_graph_negative_sampling(data, num_relations):
         rel_indices = train_edge_type == i
         rel_edge_index = train_edge_index[:, rel_indices]
         rel_count = rel_indices.count_nonzero()
+        print(i, rel_count)
         rel_neg_edge_index = negative_sampling(edge_index=rel_edge_index,
                                                num_nodes=data.num_nodes,
                                                num_neg_samples=rel_count)
@@ -66,12 +67,12 @@ def knowledge_graph_negative_sampling(data, num_relations):
 
 def get_head_corrupted(head, tail, num_nodes):
     range_n = torch.arange(0, num_nodes, dtype=torch.long)
-    return torch.stack((torch.ones(num_nodes, dtype=torch.long) * head, range_n), dim=0)
+    return torch.stack((range_n, torch.ones(num_nodes, dtype=torch.long) * tail), dim=0)
 
 
 def get_tail_corrupted(head, tail, num_nodes):
     range_n = torch.arange(0, num_nodes, dtype=torch.long)
-    return torch.stack((range_n, torch.ones(num_nodes, dtype=torch.long) * tail), dim=0)
+    return torch.stack((torch.ones(num_nodes, dtype=torch.long) * head, range_n), dim=0)
 
 
 def generate_logits(test_edge_index, test_edge_type, num_nodes, model, corruption_func):
