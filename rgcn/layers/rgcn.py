@@ -14,14 +14,15 @@ Looping over the relation index is not efficient.
 
 
 class RGCNConv(MessagePassing):
-    def __init__(self):
+    def __init__(self, in_channels, out_channels, n_relations):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.n_relations = n_relations
         self.self_W = nn.Linear(in_features=self.in_channels, out_features=self.out_channels, bias=False)
         self.W_r = nn.Parameter(torch.randn((self.n_relations, self.in_channels, self.out_channels)))
 
     def forward(self, x: Tensor, edge_idx, edge_type) -> Tensor:
-        self_transform = self.self_W(x)
-
         # First add the self-transform
         out = self.self_W(x)
 

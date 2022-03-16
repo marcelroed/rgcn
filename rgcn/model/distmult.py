@@ -25,7 +25,7 @@ class LitDistMult(pl.LightningModule):
         self.model = DistMult(n_relations, n_entities, n_channels)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-2)
+        return torch.optim.Adam(self.parameters(), lr=5e-2)
 
     def forward(self, edge_index, edge_type):
         scores = self.model(edge_index, edge_type)
@@ -39,7 +39,3 @@ class LitDistMult(pl.LightningModule):
         loss = cross_entropy(scores, train_pos_index)
         self.log('train_loss', loss)
         return loss
-
-def compute_mrr(edge_index, edge_type, model, test_edges):
-    # Produce new edge_indices for corrupted test edges
-    test_edge_index = torch.cat([edge_index[0][test_edges], edge_index[1][test_edges]], dim=0)
