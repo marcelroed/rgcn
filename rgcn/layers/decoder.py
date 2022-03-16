@@ -9,15 +9,14 @@ class DistMultDecoder(nn.Module):
         # (n_relations, n_entities) expands to (n_relations, n_entities, n_entities)
         self.R_diagonal = nn.Parameter(torch.randn(n_relations, n_channels))
 
-    def forward(self, x, sro_triples):
+    def forward(self, x, edge_index, edge_type):
         # x: (batch, n_entities, n_channels)
         # Produce the score f(s, r, o)
-        print('Running einsum')
-        print(self.R_diagonal.shape)
-        print(x.shape)
-        scores = contract('sc,rc,oc -> sro', x, self.R_diagonal, x, backend='torch')
-        print('Running einsum done')
-        return scores
+        s = x[edge_index[0, :]]
+        r = self.R_diagonal[edge_type]
+        o = x[edge_index[1, :]]
+        score = torch.sum(s * r * o, dim=1)
+        return score
 
 
 class ComplExDecoder(nn.Module):
@@ -26,12 +25,16 @@ class ComplExDecoder(nn.Module):
         # (n_relations, n_entities) expands to (n_relations, n_entities, n_entities)
         self.R_diagonal = nn.Parameter(torch.randn(n_relations, n_entities, dtype=torch.complex64))
 
-    def forward(self, x):
-        assert x.dtype == torch.complex64
+    def forward(self, x, edge_index, edge_type):
+        assert x.dtype == torch.complex64, 'ComplEx doesn\'t make much sense unless the features are complex'
         # x: (batch, n_entities, n_channels)
         # Produce the score f(s, r, o)
-        scores = torch.einsum('bsc,ro,boc -> bsro', x.conj(), self.R_diagonal, x)
-        return scores.real
+        s = x[edge_index[0, :]]
+        r = self.R_diagonal[edge_type]
+        o = x[edge_index[1, :]]
+        score = torch.sum(s * r * o, dim=1)
+
+        return score.real
 
 
 class RESCAL(nn.Module):

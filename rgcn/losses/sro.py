@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 
 
-def cross_entropy(sro_predicted, positive_mask, negative_per_positive=1):
+def cross_entropy(sro_predicted, positive_mask, negative_per_positive=1, normalized=True):
     """
     Computes the cross entropy loss for the SRO model.
     """
@@ -9,4 +9,7 @@ def cross_entropy(sro_predicted, positive_mask, negative_per_positive=1):
     # positive_mask: (num_edges)
     w = negative_per_positive
     E = sro_predicted.shape[0]
-    return - 1 / ((1 + w) * E) * F.binary_cross_entropy_with_logits(sro_predicted, positive_mask).sum()
+    bce = F.binary_cross_entropy_with_logits(sro_predicted, positive_mask.float()).sum()
+    if normalized:
+        bce /= (1 + w) * E
+    return bce

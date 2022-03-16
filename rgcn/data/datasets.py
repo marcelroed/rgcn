@@ -4,6 +4,8 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.utils import negative_sampling
 from torch_geometric.datasets import WordNet18RR
+from pytorch_lightning.loggers import WandbLogger
+
 
 from rgcn.model.distmult import LitDistMult
 
@@ -15,8 +17,8 @@ def knowledge_graph_negative_sampling(data, num_relations):
     # input: Data object with properties: edge_index, edge_type, train_mask, test_mask, val_mask, num_nodes
     # output: Data object with properties: above + train_pos_mask, train_neg_mask
     # Adds one negative training sample for each existing positive training sample
-    neg_edge_index = torch.zeros(2, 0)
-    neg_edge_type = torch.zeros(0)
+    neg_edge_index = torch.zeros(2, 0, dtype=torch.long)
+    neg_edge_type = torch.zeros(0, dtype=torch.long)
 
     train_edge_type = data.edge_type[data.train_mask]
     train_edge_index = data.edge_index[:, data.train_mask]
@@ -32,7 +34,7 @@ def knowledge_graph_negative_sampling(data, num_relations):
                                                num_nodes=data.num_nodes,
                                                num_neg_samples=all_count)
         neg_edge_index = torch.cat((neg_edge_index, rel_neg_edge_index), dim=1)
-        neg_edge_type = torch.cat((neg_edge_type, torch.ones(rel_count) * i))
+        neg_edge_type = torch.cat((neg_edge_type, torch.ones(rel_count, dtype=torch.long) * i))
 
     full_edge_index = torch.cat((data.edge_index, neg_edge_index), dim=-1)
     full_edge_type = torch.cat((data.edge_type, neg_edge_type), dim=-1)
@@ -58,8 +60,9 @@ def knowledge_graph_negative_sampling(data, num_relations):
 if __name__ == '__main__':
     loader = DataLoader([knowledge_graph_negative_sampling(WN18RR_DATA, WN18RR_NUM_RELATIONS)])
     print(WN18RR_DATA)
-    model = LitDistMult(WN18RR_NUM_RELATIONS, WN18RR_DATA.num_nodes)
-    trainer = pl.Trainer()
+    model = LitDistMult(WN18RR_NUM_RELATIONS, WN18RR_DATA.num_nodes, n_channels=50)
+    wandb_logger = WandbLogger(name='rgcn_distmult', project='rgcn')
+    trainer = pl.Trainer(max_epochs=1000, logger=wandb_logger)
     trainer.fit(model, loader)
 
     scores = model.forward()
