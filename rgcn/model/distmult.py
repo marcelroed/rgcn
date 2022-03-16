@@ -12,8 +12,8 @@ class DistMult(nn.Module):
         self.initializations = nn.Parameter(torch.randn(n_entities, n_channels))
         self.n_channels = n_channels
 
-    def forward(self, sro_triples):
-        return self.decoder(self.initializations, sro_triples)
+    def forward(self, edge_index, edge_type):
+        return self.decoder(self.initializations, edge_index, edge_type)
 
 class LitDistMult(pl.LightningModule):
     def __init__(self, n_relations, n_entities, n_channels=50):
@@ -35,8 +35,14 @@ class LitDistMult(pl.LightningModule):
         return scores
 
     def training_step(self, data):
-        train_edge_index = data.edge_index[data.train_mask]
+        train_edge_index = data.edge_index[:, data.train_mask]
         train_edge_type = data.edge_type[data.train_mask]
         train_pos_index = data.train_pos_mask[data.train_mask]
-        scores = self.model((train_edge_index[0], train_edge_type, train_edge_index[1]))
-        return cross_entropy(scores, train_pos_index)
+        scores = self.model(train_edge_index, train_edge_type)
+        loss = cross_entropy(scores, train_pos_index)
+        self.log('train_loss', loss)
+        return loss
+
+def compute_mrr(edge_index, edge_type, model, test_edges):
+    # Produce new edge_indices for corrupted test edges
+    test_edge_index = torch.cat([edge_index[0][test_edges], edge_index[1][test_edges]], dim=0)
