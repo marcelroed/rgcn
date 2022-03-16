@@ -94,8 +94,13 @@ def test(data, model: LitDistMult):
     test_edge_index = data.edge_index[:, data.test_mask]
     test_edge_type = data.edge_type[data.test_mask]
     logits = generate_logits(test_edge_index, test_edge_type, data.num_nodes, model, get_head_corrupted)
+    results_head = mean_reciprocal_rank_and_hits(logits, test_edge_index, corrupt='head')
+    logits = generate_logits(test_edge_index, test_edge_type, data.num_nodes, model, get_tail_corrupted)
+    results_tail = mean_reciprocal_rank_and_hits(logits, test_edge_index, corrupt='tail')
+    results = (results_head.mrr + results_tail.mrr) / 2
 
-    results = mean_reciprocal_rank_and_hits(logits, test_edge_index, corrupt='head')
+    # results = mrr_with_dgl(model.model.initializations, model.model.decoder.R_diagonal, test_edge_index, test_edge_type)
+
     print(results)
 
 
