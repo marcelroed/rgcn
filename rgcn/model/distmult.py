@@ -27,11 +27,8 @@ class LitDistMult(pl.LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-2)
 
-    def forward(self, data):
-        train_edge_index = data.edge_index[data.train_mask]
-        train_edge_type = data.edge_type[data.train_mask]
-        # train_pos_index = data.train_pos_mask[data.train_mask]
-        scores = self.model(train_edge_index, train_edge_type)
+    def forward(self, edge_index, edge_type):
+        scores = self.model(edge_index, edge_type)
         return scores
 
     def training_step(self, data):

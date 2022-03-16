@@ -6,7 +6,6 @@ from torch_geometric.utils import negative_sampling
 from torch_geometric.datasets import WordNet18RR
 from pytorch_lightning.loggers import WandbLogger
 
-
 from rgcn.model.distmult import LitDistMult
 
 WN18RR_NUM_RELATIONS = 11
@@ -56,6 +55,37 @@ def knowledge_graph_negative_sampling(data, num_relations):
                 train_pos_mask=train_pos_mask,
                 train_neg_mask=train_neg_mask)
 
+
+def get_head_corrupted(head, tail, num_nodes):
+    range_n = torch.arange(0, num_nodes, dtype=torch.long)
+    return torch.stack((torch.ones(num_nodes, dtype=torch.long) * head, range_n), dim=0)
+
+
+def get_tail_corrupted(head, tail, num_nodes):
+    range_n = torch.arange(0, num_nodes, dtype=torch.long)
+    return torch.stack((range_n, torch.ones(num_nodes, dtype=torch.long) * tail), dim=0)
+
+
+def generate_logits(test_edge_index, test_edge_type, num_nodes, model, corruption_func):
+    test_count = test_edge_type.shape[0]
+    result = []
+    model.eval()
+    with torch.no_grad():
+        for i in range(0, test_count):
+            head, tail = test_edge_index[:, i].tolist()
+            corrupted_edge_type = test_edge_type[i].repeat(num_nodes)
+            corrupted_edge_index = corruption_func(head, tail, num_nodes)
+            scores = model.forward(corrupted_edge_index, corrupted_edge_type)
+            result.append(scores)
+        return torch.stack(result)
+
+
+def test(data, model):
+    test_edge_index = data.edge_index[:, data.test_mask]
+    test_edge_type = data.edge_type[data.test_mask]
+    logits = generate_logits(test_edge_index, test_edge_type, data.num_nodes, model, get_head_corrupted)
+    print(logits.shape)
+
 if __name__ == '__main__':
     loader = DataLoader([knowledge_graph_negative_sampling(WN18RR_DATA, WN18RR_NUM_RELATIONS)])
     print(WN18RR_DATA)
@@ -63,5 +93,4 @@ if __name__ == '__main__':
     wandb_logger = WandbLogger(name='rgcn_distmult', project='rgcn')
     trainer = pl.Trainer(max_epochs=1000, logger=wandb_logger)
     trainer.fit(model, loader)
-
-    scores = model.forward()
+    test(WN18RR_DATA, model)
