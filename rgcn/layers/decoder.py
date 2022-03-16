@@ -12,6 +12,7 @@ class DistMultDecoder(nn.Module):
     def forward(self, x, edge_index, edge_type):
         # x: (batch, n_entities, n_channels)
         # Produce the score f(s, r, o)
+        # print('Starting decoder')
         s = x[edge_index[0, :]]
         r = self.R_diagonal[edge_type]
         o = x[edge_index[1, :]]

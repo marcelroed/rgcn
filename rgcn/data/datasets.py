@@ -10,8 +10,9 @@ USE_RR = False
 WordNet = WordNet18RR if USE_RR else WordNet18
 
 from pytorch_lightning.loggers import WandbLogger
-from rgcn.metrics import mean_reciprocal_rank_and_hits
+from rgcn.metrics import mean_reciprocal_rank_and_hits, mrr_with_dgl
 from tqdm.auto import trange
+from rich.progress import track
 
 from rgcn.model.distmult import LitDistMult
 
@@ -89,7 +90,7 @@ def generate_logits(test_edge_index, test_edge_type, num_nodes, model, corruptio
         return torch.stack(result)
 
 
-def test(data, model):
+def test(data, model: LitDistMult):
     test_edge_index = data.edge_index[:, data.test_mask]
     test_edge_type = data.edge_type[data.test_mask]
     logits = generate_logits(test_edge_index, test_edge_type, data.num_nodes, model, get_head_corrupted)
@@ -103,6 +104,6 @@ if __name__ == '__main__':
     print(DATA)
     model = LitDistMult(NUM_RELATIONS, DATA.num_nodes, n_channels=50)
     # wandb_logger = WandbLogger(name='rgcn_distmult', project='rgcn')
-    trainer = pl.Trainer(max_epochs=1000, callbacks=[EarlyStopping(monitor='train_loss')]) # , logger=wandb_logger)
+    trainer = pl.Trainer(max_epochs=500, callbacks=[EarlyStopping(monitor='train_loss')]) # , logger=wandb_logger)
     trainer.fit(model, loader)
     test(DATA, model)

@@ -132,3 +132,9 @@ dmypy.json
 # IDE Files
 .idea/
 
+
+# Data and results
+data/
+wandb/
+lightning_logs/
+

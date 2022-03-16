@@ -2,10 +2,32 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from rgcn.layers.rgcn import RGCNConv
+from rgcn.layers.decoder import DistMultDecoder
 
-class RGCN(nn.Module):
-    def __init__(self):
+class RGCNModel(nn.Module):
+    def __init__(self, n_nodes, n_relations):
         super().__init__()
-        self.conv1 = RGCNConv(in_channels, hidden_channels)
+        self.n_nodes = n_nodes
+        self.n_relations = n_relations
+        self.initial_channels = 32
+        self.hidden_channels = 64
+        self.out_channels = 64
+        self.conv1 = RGCNConv(self.initial_channels, self.hidden_channels, self.n_relations)
+        self.conv2 = RGCNConv(self.hidden_channels, self.out_channels, self.n_relations)
+        self.initial_embeddings = nn.Parameter(torch.randn(self.n_nodes, self.initial_channels))
 
-    def forward(self, x, edge_index):
+        self.decoder = DistMultDecoder(self.n_relations, self.out_channels)
+
+    def forward(self, edge_index, edge_type):
+        x = self.initial_embeddings
+
+        # Encoder
+        x = F.relu(self.conv1(x, edge_index, edge_type))
+        x = F.relu(self.conv2(x, edge_index, edge_type))
+
+        # Decoder
+        score = self.decoder(x, edge_index, edge_type)
+
+        return score
+
+
