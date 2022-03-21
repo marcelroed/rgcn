@@ -22,7 +22,6 @@ class MRRResults:
 
 def mean_reciprocal_rank_and_hits(hrt_scores, test_edge_index, corrupt: Literal['head', 'tail']):
     assert corrupt in ['head', 'tail']
-    print('Computing MRR')
 
     # hrt_scores: (n_test_edges, n_nodes)
     perm = torch.argsort(hrt_scores, dim=1, descending=True)
@@ -91,7 +90,6 @@ def perturb_and_get_raw_rank(emb, w, a, r, b, test_size, batch_size=100):
     emb = emb.transpose(0, 1) # size D x V
     w = w.transpose(0, 1)     # size D x R
     for idx in trange(n_batch):
-        print("batch {} / {}".format(idx, n_batch))
         batch_start = idx * batch_size
         batch_end = (idx + 1) * batch_size
         batch_a = a[batch_start: batch_end]

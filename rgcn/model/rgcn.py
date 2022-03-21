@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from rgcn.layers.rgcn import RGCNConv
 from rgcn.layers.decoder import DistMultDecoder
+import pytorch_lightning as pl
 
 class RGCNModel(nn.Module):
     def __init__(self, n_nodes, n_relations):
@@ -31,3 +32,14 @@ class RGCNModel(nn.Module):
         return score
 
 
+class RGCNEntityClassifier(nn.Module):
+    pass
+
+
+class LitRGCNEntityClassifier(pl.LightningModule):
+    def __init__(self, n_nodes, n_relations, n_classes, channels: list[int]):
+        super().__init__()
+        self.n_nodes = n_nodes
+        self.n_relations = n_relations
+        self.n_classes = n_classes
+        self.channels = channels
