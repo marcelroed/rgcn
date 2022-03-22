@@ -14,9 +14,9 @@ def link_prediction_cross_entropy(sro_predicted, positive_mask, negative_per_pos
 
     eps = 1e-15
 
-    prob = torch.sigmoid(sro_predicted)
-    # bce = F.binary_cross_entropy_with_logits(sro_predicted, positive_mask.float())
-    bce = - torch.sum(y * torch.log(prob + eps) + (1 - y) * torch.log(1 - prob + eps))
-    if normalized:
-        bce /= (1 + w) * E
+    #prob = torch.sigmoid(sro_predicted)
+    bce = F.binary_cross_entropy_with_logits(sro_predicted, positive_mask.float())
+    #bce = - torch.sum(y * torch.log(prob + eps) + (1 - y) * torch.log(1 - prob + eps))
+    #if normalized:
+    #    bce /= (1 + w) * E
     return bce

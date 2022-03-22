@@ -12,7 +12,7 @@ from torch_geometric.loader import DataLoader
 
 from rgcn.metrics import mean_reciprocal_rank_and_hits, mrr_with_dgl
 from rgcn.model.distmult import LitDistMult, LitDistMultKGE
-from rgcn.data.datasets import DATA, knowledge_graph_negative_sampling, NUM_RELATIONS, generate_logits, \
+from rgcn.data.datasets import DATA, NUM_RELATIONS, generate_logits, \
     get_head_corrupted, get_tail_corrupted
 
 
@@ -38,7 +38,7 @@ class GraphData:
     test_mask: torch.Tensor
 
     def get_train_loader(self) -> DataLoader:
-        return DataLoader([knowledge_graph_negative_sampling(self.data_obj, self.n_relations)])
+        return DataLoader([self.data_obj])
 
     def get_test_features(self) -> GraphData.TestFeatures:
         return GraphData.TestFeatures(edge_index=self.data_obj.edge_index, edge_type=self.data_obj.edge_type)
@@ -61,7 +61,8 @@ def train_model(model_config: ModelConfig, dataset: GraphData, epochs=100, gpu=F
 
     # wandb_logger.watch(model, log_freq=10)
 
-    trainer = pl.Trainer(max_epochs=epochs, callbacks=[EarlyStopping(monitor='train_loss')], gpus=int(gpu), logger=wandb_logger, log_every_n_steps=1)
+    # trainer = pl.Trainer(max_epochs=epochs, callbacks=[EarlyStopping(monitor='train_loss')], gpus=int(gpu), logger=wandb_logger, log_every_n_steps=1)
+    trainer = pl.Trainer(max_epochs=epochs, gpus=int(gpu), logger=wandb_logger, log_every_n_steps=1)
     trainer.fit(lit_model, loader)
     wandb_logger.close()
 
@@ -78,9 +79,11 @@ def test_model(model: pl.LightningModule, dataset: GraphData):
 
     logits = generate_logits(test_edge_index, test_edge_type, dataset.n_entities, model, get_head_corrupted)
     results_head = mean_reciprocal_rank_and_hits(logits, test_edge_index.to(logits), corrupt='head')
+    print(results_head)
 
     logits = generate_logits(test_edge_index, test_edge_type, dataset.n_entities, model, get_tail_corrupted)
     results_tail = mean_reciprocal_rank_and_hits(logits, test_edge_index.to(logits), corrupt='tail')
+    print(results_tail)
 
     results = (results_head.mrr + results_tail.mrr) / 2
     print(results)
