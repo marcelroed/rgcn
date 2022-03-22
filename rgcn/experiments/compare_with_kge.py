@@ -1,10 +1,11 @@
 from rgcn.model.distmult import LitDistMult, LitDistMultKGE
 from rgcn.experiments.common import train_model, ModelConfig, GraphData, test_model
 from rgcn.data.datasets import DATA
+from dbgpy import dbg
 
 
 def compare_distmults():
-    print(DATA)
+    dbg(DATA)
     graph_data = GraphData.from_dataset(DATA)
 
     model = train_model(ModelConfig(

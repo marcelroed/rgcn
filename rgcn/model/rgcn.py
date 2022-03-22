@@ -33,13 +33,46 @@ class RGCNModel(nn.Module):
 
 
 class RGCNEntityClassifier(nn.Module):
-    pass
+    def __init__(self, n_nodes, n_relations, layer_channels: list[int]):
+        super().__init__()
+        self.n_nodes = n_nodes
+        self.n_relations = n_relations
+        self.layers = nn.ModuleList([
+            RGCNConv(layer_channels[i], layer_channels[i + 1], self.n_relations)
+            for i in range(len(layer_channels) - 1)
+        ])
+
+    def forward(self, x, edge_index, edge_type):
+        for layer in self.layers[:-1]:
+            x = F.relu(layer(x, edge_index, edge_type))
+        last_layer = self.layers[-1]
+        logits = last_layer(x, edge_index, edge_type)
+        return logits
+
+    def predict(self, x, edge_index, edge_type):
+        logits = self.forward(x, edge_index, edge_type)
+        return torch.softmax(logits, dim=1)
 
 
 class LitRGCNEntityClassifier(pl.LightningModule):
-    def __init__(self, n_nodes, n_relations, n_classes, channels: list[int]):
+    def __init__(self, n_nodes, n_relations, n_classes, hidden_channels: list[int], lr):
         super().__init__()
         self.n_nodes = n_nodes
         self.n_relations = n_relations
         self.n_classes = n_classes
-        self.channels = channels
+        self.hidden_channels = hidden_channels
+        self.lr = lr
+        self.model = RGCNEntityClassifier(self.n_nodes, self.n_relations, self.hidden_channels + [self.n_classes])
+
+    def forward(self, x, edge_index, edge_type):
+        return self.model(x, edge_index, edge_type)
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        return optimizer
+
+    def training_step(self, batch, batch_idx):
+        x, edge_index, edge_type, y = batch
+        logits = self(x, edge_index, edge_type)
+        loss = F.cross_entropy(logits, y)
+        return {'loss': loss}

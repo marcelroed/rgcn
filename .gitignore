@@ -134,7 +134,7 @@ dmypy.json
 
 
 # Data and results
-data/
+/data/
 wandb/
 lightning_logs/
 
