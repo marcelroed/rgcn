@@ -20,6 +20,13 @@ class MRRResults:
     hits_at_1: float
 
 
+def average_mrr(mrr1, mrr2):
+    return MRRResults(mrr=(mrr1.mrr + mrr2.mrr)/2,
+                      hits_at_10=(mrr1.hits_at_10 + mrr2.hits_at_10)/2,
+                      hits_at_3=(mrr1.hits_at_3 + mrr2.hits_at_3)/2,
+                      hits_at_1=(mrr1.hits_at_1 + mrr2.hits_at_1)/2)
+
+
 def mean_reciprocal_rank_and_hits(hrt_scores, test_edge_index, corrupt: Literal['head', 'tail']):
     assert corrupt in ['head', 'tail']
 

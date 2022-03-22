@@ -11,7 +11,7 @@ from torch_geometric.data import InMemoryDataset
 from torch_geometric.loader import DataLoader
 from tqdm import trange
 
-from rgcn.metrics import mean_reciprocal_rank_and_hits, mrr_with_dgl
+from rgcn.metrics import mean_reciprocal_rank_and_hits, mrr_with_dgl, average_mrr
 from rgcn.model.distmult import LitDistMult, LitDistMultKGE
 
 
@@ -99,6 +99,7 @@ def train_model(model_config: ModelConfig, dataset: GraphData, epochs=100, gpu=F
 
 
 def test_model(model: pl.LightningModule, dataset: GraphData):
+    model.eval()
     print(f'Testing model {model.__class__.__name__}')
     test_features = dataset.get_test_features()
     edge_index, edge_type = test_features.edge_index, test_features.edge_type
@@ -114,7 +115,7 @@ def test_model(model: pl.LightningModule, dataset: GraphData):
     results_tail = mean_reciprocal_rank_and_hits(logits, test_edge_index.to(logits), corrupt='tail')
     print(results_tail)
 
-    results = (results_head.mrr + results_tail.mrr) / 2
+    results = average_mrr(results_head, results_tail)
     print(results)
 
     # dgl_mrr = mrr_with_dgl(model.model.initializations, model.model.decoder.R_diagonal, test_edge_index, test_edge_type)

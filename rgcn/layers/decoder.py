@@ -14,13 +14,14 @@ class DistMultDecoder(nn.Module):
         # x: (batch, n_entities, n_channels)
         # Produce the score f(s, r, o)
 
-        s = F.normalize(x[edge_index[0, :]], dim=1)
+        s = x[edge_index[0, :]]
         r = self.R_diagonal[edge_type]
-        o = F.normalize(x[edge_index[1, :]], dim=1)
+        o = x[edge_index[1, :]]
 
-        #s = x[edge_index[0, :]]
-        #r = self.R_diagonal[edge_type]
-        #o = x[edge_index[1, :]]
+        if self.training:
+            s = F.normalize(s, dim=1)
+            o = F.normalize(o, dim=1)
+
         score = torch.sum(s * r * o, dim=1)
         return score
 
@@ -38,6 +39,11 @@ class ComplExDecoder(nn.Module):
         s = x[edge_index[0, :]]
         r = self.R_diagonal[edge_type]
         o = x[edge_index[1, :]]
+
+        if self.training:
+            s = F.normalize(s, dim=1)
+            o = F.normalize(o, dim=1)
+
         score = torch.sum(s * r * o, dim=1)
 
         return score.real

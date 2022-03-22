@@ -1,4 +1,4 @@
-from rgcn.layers.decoder import DistMultDecoder
+from rgcn.layers.decoder import DistMultDecoder, ComplExDecoder
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -16,6 +16,16 @@ class DistMult(nn.Module):
         self.decoder = DistMultDecoder(n_relations, n_channels)
         self.initializations = nn.Parameter(torch.randn(n_entities, n_channels, dtype=torch.float))
         #nn.init.xavier_uniform_(self.initializations.data)
+        self.n_channels = n_channels
+
+    def forward(self, edge_index, edge_type):
+        return self.decoder(self.initializations, edge_index, edge_type)
+
+class ComplEx(nn.Module):
+    def __init__(self, n_relations, n_entities, n_channels=50):
+        super().__init__()
+        self.decoder = ComplExDecoder(n_relations, n_channels)
+        self.initializations = nn.Parameter(torch.randn(n_entities, n_channels, dtype=torch.complex64))
         self.n_channels = n_channels
 
     def forward(self, edge_index, edge_type):
@@ -95,6 +105,32 @@ class LitDistMult(pl.LightningModule):
         self.log('train_loss', loss)
         return loss
 
+
+class LitComplEx(pl.LightningModule):
+    def __init__(self, n_relations, n_entities, n_channels=50):
+        super().__init__()
+        self.n_relations = n_relations
+        self.entities = n_entities
+        self.n_channel = n_channels
+        self.save_hyperparameters()
+        self.model = ComplEx(n_relations, n_entities, n_channels)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=5e-1)
+
+    def forward(self, edge_index, edge_type):
+        scores = self.model(edge_index, edge_type)
+        return scores
+
+    def training_step(self, data):
+        data = knowledge_graph_negative_sampling(data, self.n_relations)
+        train_edge_index = data.edge_index[:, data.train_mask]
+        train_edge_type = data.edge_type[data.train_mask]
+        train_pos_index = data.train_pos_mask[data.train_mask]
+        scores = self.model(train_edge_index, train_edge_type)
+        loss = link_prediction_cross_entropy(scores, train_pos_index)
+        self.log('train_loss', loss)
+        return loss
 
 class LitDistMultKGE(pl.LightningModule):
     def __init__(self, n_relations, n_entities, n_channels=50):
