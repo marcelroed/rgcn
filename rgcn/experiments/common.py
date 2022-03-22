@@ -33,6 +33,7 @@ class GraphData:
     data_obj: InMemoryDataset
     n_relations: int
     n_entities: int
+    n_facts: int
     name: str
     train_mask: torch.Tensor
     test_mask: torch.Tensor
@@ -48,12 +49,13 @@ class GraphData:
         data_obj = dataset
         n_relations = torch.max(data_obj.edge_type).item() + 1
         n_entities = dataset.num_nodes
+        n_facts = data_obj.edge_type.shape[0]
         train_mask = data_obj.train_mask if hasattr(data_obj, 'train_mask') else print(
             'Getting default train_mask') or torch.ones(data_obj.edge_index.shape[1], dtype=torch.bool)
         test_mask = data_obj.test_mask if hasattr(data_obj, 'test_mask') else print(
             'Getting default test_mask') or torch.ones(data_obj.edge_index.shape[1], dtype=torch.bool)
         return cls(data_obj=data_obj, n_relations=n_relations, n_entities=n_entities, train_mask=train_mask,
-                   test_mask=test_mask, name=name)
+                   test_mask=test_mask, n_facts=n_facts, name=name)
 
 
 def get_head_corrupted(head, tail, num_nodes):
