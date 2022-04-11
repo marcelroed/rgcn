@@ -95,7 +95,7 @@ def train_model(model_config: ModelConfig, dataset: GraphData, epochs=100, gpu=F
     # trainer = pl.Trainer(max_epochs=epochs, callbacks=[EarlyStopping(monitor='train_loss')], gpus=int(gpu), logger=wandb_logger, log_every_n_steps=1)
     trainer = pl.Trainer(max_epochs=epochs, gpus=int(gpu), logger=wandb_logger, log_every_n_steps=1)
     trainer.fit(lit_model, loader)
-    wandb_logger.close()
+    wandb_logger.finalize('success')
 
     return lit_model
 

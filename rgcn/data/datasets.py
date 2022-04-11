@@ -97,6 +97,7 @@ WORDNET18 = GraphData.from_dataset(WordNet18('data/wordnet18')[0], 'WN18')
 FB15K_237 = GraphData.from_dataset(CustomDataset('data/fb15k_237', 'FB15k-237')[0], 'FB15k-237')
 
 
+
 @define
 class EntityClassificationDataset:
     data: Entities
@@ -104,7 +105,16 @@ class EntityClassificationDataset:
     @classmethod
     def get_dataset(cls, name: Literal['AIFB', 'MUTAG', 'BGS', 'AM']) -> EntityClassificationDataset:
         data_object = Entities(f'data/{name}', name)[0]
-        return cls(data_object[0])
+        return cls(data_object)
+
+    def get_train_dataloader(self):
+        return DataLoader([self.data])
+
+    def get_test_dataloader(self):
+        return DataLoader([self.data])
+
+    def __getattr__(self, item):
+        return getattr(self.data, item)
 
 
 @define
